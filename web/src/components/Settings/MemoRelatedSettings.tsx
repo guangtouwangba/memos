@@ -1,5 +1,7 @@
-import { Button, Input, Switch, Select, Option } from "@mui/joy";
-import { isEqual } from "lodash-es";
+import { Switch, Select, Option, Chip, ChipDelete } from "@mui/joy";
+import { Button, Input } from "@usememos/mui";
+import { isEqual, uniq } from "lodash-es";
+import { CheckIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { workspaceSettingNamePrefix, useWorkspaceSettingStore } from "@/store/v1";
@@ -17,6 +19,7 @@ const MemoRelatedSettings = () => {
     workspaceSettingStore.getWorkspaceSettingByKey(WorkspaceSettingKey.MEMO_RELATED)?.memoRelatedSetting || {},
   );
   const [memoRelatedSetting, setMemoRelatedSetting] = useState<WorkspaceMemoRelatedSetting>(originalSetting);
+  const [editingReaction, setEditingReaction] = useState<string>("");
 
   const updatePartialSetting = (partial: Partial<WorkspaceMemoRelatedSetting>) => {
     const newWorkspaceMemoRelatedSetting = WorkspaceMemoRelatedSetting.fromPartial({
@@ -26,7 +29,21 @@ const MemoRelatedSettings = () => {
     setMemoRelatedSetting(newWorkspaceMemoRelatedSetting);
   };
 
+  const upsertReaction = () => {
+    if (!editingReaction) {
+      return;
+    }
+
+    updatePartialSetting({ reactions: uniq([...memoRelatedSetting.reactions, editingReaction.trim()]) });
+    setEditingReaction("");
+  };
+
   const updateSetting = async () => {
+    if (memoRelatedSetting.reactions.length === 0) {
+      toast.error("Reactions must not be empty.");
+      return;
+    }
+
     try {
       await workspaceSettingStore.setWorkspaceSetting({
         name: `${workspaceSettingNamePrefix}${WorkspaceSettingKey.MEMO_RELATED}`,
@@ -42,7 +59,7 @@ const MemoRelatedSettings = () => {
 
   return (
     <div className="w-full flex flex-col gap-2 pt-2 pb-4">
-      <p className="font-medium text-gray-700 dark:text-gray-500">Memo related settings</p>
+      <p className="font-medium text-gray-700 dark:text-gray-500">{t("setting.memo-related-settings.title")}</p>
       <div className="w-full flex flex-row justify-between items-center">
         <span>{t("setting.system-section.disable-public-memos")}</span>
         <Switch
@@ -65,21 +82,21 @@ const MemoRelatedSettings = () => {
         />
       </div>
       <div className="w-full flex flex-row justify-between items-center">
-        <span>Enable link preview</span>
+        <span>{t("setting.memo-related-settings.enable-link-preview")}</span>
         <Switch
           checked={memoRelatedSetting.enableLinkPreview}
           onChange={(event) => updatePartialSetting({ enableLinkPreview: event.target.checked })}
         />
       </div>
       <div className="w-full flex flex-row justify-between items-center">
-        <span>Enable memo comments</span>
+        <span>{t("setting.memo-related-settings.enable-memo-comments")}</span>
         <Switch
           checked={memoRelatedSetting.enableComment}
           onChange={(event) => updatePartialSetting({ enableComment: event.target.checked })}
         />
       </div>
       <div className="w-full flex flex-row justify-between items-center">
-        <span>Enable memo location</span>
+        <span>{t("setting.memo-related-settings.enable-memo-location")}</span>
         <Switch
           checked={memoRelatedSetting.enableLocation}
           onChange={(event) => updatePartialSetting({ enableLocation: event.target.checked })}
@@ -93,7 +110,14 @@ const MemoRelatedSettings = () => {
         />
       </div>
       <div className="w-full flex flex-row justify-between items-center">
-        <span>Content length limit(Byte)</span>
+        <span>{t("setting.system-section.disable-markdown-shortcuts-in-editor")}</span>
+        <Switch
+          checked={memoRelatedSetting.disableMarkdownShortcuts}
+          onChange={(event) => updatePartialSetting({ disableMarkdownShortcuts: event.target.checked })}
+        />
+      </div>
+      <div className="w-full flex flex-row justify-between items-center">
+        <span>{t("setting.memo-related-settings.content-lenght-limit")}</span>
         <Input
           className="w-24"
           type="number"
@@ -120,8 +144,43 @@ const MemoRelatedSettings = () => {
             ))}
         </Select>
       </div>
+      <div className="w-full">
+        <span className="truncate">{t("setting.memo-related-settings.reactions")}</span>
+        <div className="mt-2 w-full flex flex-row flex-wrap gap-1">
+          {memoRelatedSetting.reactions.map((reactionType) => {
+            return (
+              <Chip
+                className="!h-8"
+                key={reactionType}
+                variant="outlined"
+                size="lg"
+                endDecorator={
+                  <ChipDelete
+                    onDelete={() => updatePartialSetting({ reactions: memoRelatedSetting.reactions.filter((r) => r !== reactionType) })}
+                  />
+                }
+              >
+                {reactionType}
+              </Chip>
+            );
+          })}
+          <Input
+            className="w-32 !rounded-full !pl-3"
+            placeholder="Input"
+            size="sm"
+            value={editingReaction}
+            onChange={(event) => setEditingReaction(event.target.value.trim())}
+            endDecorator={
+              <CheckIcon
+                className="w-5 h-5 text-gray-500 dark:text-gray-400 cursor-pointer hover:text-teal-600"
+                onClick={() => upsertReaction()}
+              />
+            }
+          />
+        </div>
+      </div>
       <div className="mt-2 w-full flex justify-end">
-        <Button disabled={isEqual(memoRelatedSetting, originalSetting)} onClick={updateSetting}>
+        <Button color="primary" disabled={isEqual(memoRelatedSetting, originalSetting)} onClick={updateSetting}>
           {t("common.save")}
         </Button>
       </div>

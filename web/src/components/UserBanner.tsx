@@ -1,5 +1,4 @@
 import { Dropdown, Menu, MenuButton, MenuItem } from "@mui/joy";
-import clsx from "clsx";
 import { LogOutIcon, SmileIcon } from "lucide-react";
 import { authServiceClient } from "@/grpcweb";
 import useCurrentUser from "@/hooks/useCurrentUser";
@@ -8,6 +7,7 @@ import { Routes } from "@/router";
 import { useWorkspaceSettingStore } from "@/store/v1";
 import { WorkspaceGeneralSetting } from "@/types/proto/api/v1/workspace_setting_service";
 import { WorkspaceSettingKey } from "@/types/proto/store/workspace_setting";
+import { cn } from "@/utils";
 import { useTranslate } from "@/utils/i18n";
 import UserAvatar from "./UserAvatar";
 
@@ -24,7 +24,7 @@ const UserBanner = (props: Props) => {
   const workspaceGeneralSetting =
     workspaceSettingStore.getWorkspaceSettingByKey(WorkspaceSettingKey.GENERAL).generalSetting || WorkspaceGeneralSetting.fromPartial({});
   const title = (user ? user.nickname || user.username : workspaceGeneralSetting.customProfile?.title) || "Memos";
-  const avatarUrl = (user ? user.avatarUrl : workspaceGeneralSetting.customProfile?.logoUrl) || "/logo.webp";
+  const avatarUrl = (user ? user.avatarUrl : workspaceGeneralSetting.customProfile?.logoUrl) || "/full-logo.webp";
 
   const handleSignOut = async () => {
     await authServiceClient.signOut({});
@@ -36,12 +36,12 @@ const UserBanner = (props: Props) => {
       <Dropdown>
         <MenuButton disabled={!user} slots={{ root: "div" }}>
           <div
-            className={clsx(
-              "py-1 my-1 w-auto flex flex-row justify-start items-center cursor-pointer rounded-2xl border border-transparent text-gray-800 dark:text-gray-400",
+            className={cn(
+              "py-1 my-1 w-auto flex flex-row justify-start items-center cursor-pointer text-gray-800 dark:text-gray-400",
               collapsed ? "px-1" : "px-3",
             )}
           >
-            <UserAvatar className="shadow shrink-0" avatarUrl={avatarUrl} />
+            <UserAvatar className="shrink-0" avatarUrl={avatarUrl} />
             {!collapsed && <span className="ml-2 text-lg font-medium text-slate-800 dark:text-gray-300 shrink truncate">{title}</span>}
           </div>
         </MenuButton>
